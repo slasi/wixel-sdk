@@ -15,9 +15,8 @@ ISR(ST, 1);
 /*! Enable sleep timer interrupts and set the timer resolution */
 void sleepInit(void);
 
-/*! Helper functions to switch oscillators from RC OSC to/from HS XOSC */
+/*! Helper function to switch oscillator to RC OSC from HS XOSC */
 void switchToRCOSC(void);
-void switchToHSXOSC(void);
 
 /*! Enters sleep mode 1 for x seconds 
  *  This will not disable any other interrupts */

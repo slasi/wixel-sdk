@@ -5,6 +5,7 @@
 // design note by Torgeir Sundet
 
 #include <sleep.h>
+#include <board.h>
 
 // Initialization of source buffers and DMA descriptor for the DMA transfer
 unsigned char __xdata PM2_BUF[7] = {0x06,0x06,0x06,0x06,0x06,0x06,0x04};
@@ -13,7 +14,6 @@ unsigned char __xdata dmaDesc[8] = {0x00,0x00,0xDF,0xBE,0x00,0x07,0x20,0x42};
 
 void sleepInit(void)
 {
-   WORCTRL |= 0x03; // Set Sleep Timer to the lowest resolution (1 second)   
    WORIRQ  |= (1<<4); // Enable Event0 interrupt  
 }
 
@@ -43,27 +43,15 @@ void switchToRCOSC(void)
    SLEEP |= 0x04;
 }
 
-void switchToHSXOSC(void)
-{
-   // Power up [HS XOSC] (SLEEP.OSC_PD = 0)
-   SLEEP &= ~0x04;
-   // Wait until [HS XOSC] is stable (SLEEP.XOSC_STB = 1)
-   while ( ! (SLEEP & 0x40) );
-   // Switch system clock source to [HS XOSC] (CLKCON.OSC = 0)
-   CLKCON &= ~0x40;
-   // Wait until system clock source has actually changed (CLKCON.OSC = 0)
-   while ( CLKCON & 0x40 );
-   // Power down [HS RCOSC] (SLEEP.OSC_PD = 1)
-   SLEEP |= 0x04; 
-}
-
 void sleepMode1(uint16 seconds)
 {
    unsigned char temp;
    unsigned short desired_event0;
 
    desired_event0 = seconds;
-    
+
+   // set Sleep Timer to the lowest resolution (1 second)      
+   WORCTRL |= 0x03; 
    // make sure interrupts aren't completely disabled
    // and enable sleep timer interrupt
    IEN0 |= 0xA0;
@@ -107,7 +95,7 @@ void sleepMode1(uint16 seconds)
    }
    
    // Switch back to high speed      
-   switchToHSXOSC();   
+   boardClockInit(); 
 }
 
 void sleepMode2(uint16 seconds)
@@ -116,10 +104,12 @@ void sleepMode2(uint16 seconds)
    unsigned short desired_event0;
    
    unsigned char storedDescHigh, storedDescLow;
-   unsigned char interrupts0, interrupts1, interrupts2;
+   unsigned char storedIEN0, storedIEN1, storedIEN2;
    
    desired_event0 = seconds;
-
+   
+   // set Sleep Timer to the lowest resolution (1 second)      
+   WORCTRL |= 0x03; 
    // must be using RC OSC before going to PM2
    switchToRCOSC();
    
@@ -142,9 +132,9 @@ void sleepMode2(uint16 seconds)
    DMAARM = 0x01;   
    
    // save enabled interrupts
-   interrupts0 = IEN0;
-   interrupts1 = IEN1;
-   interrupts2 = IEN2; 
+   storedIEN0 = IEN0;
+   storedIEN1 = IEN1;
+   storedIEN2 = IEN2; 
    
    // make sure interrupts aren't completely disabled
    // and enable sleep timer interrupt
@@ -163,8 +153,7 @@ void sleepMode2(uint16 seconds)
    WOREVT1 = desired_event0 >> 8; // Set EVENT0, high byte
    WOREVT0 = desired_event0; // Set EVENT0, low byte
   
-   // Flash cache must be disabled.
-   MEMCTR |= 0x02;
+   MEMCTR |= 0x02;  // Flash cache must be disabled.
    SLEEP = 0x06; // PM2, disable USB, power down other oscillators
     
    __asm nop __endasm; 
@@ -180,12 +169,16 @@ void sleepMode2(uint16 seconds)
    }
    
    // restore enabled interrupts
-   IEN0 = interrupts0;
-   IEN1 = interrupts1;
-   IEN2 = interrupts2; 
-
+   IEN0 = storedIEN0;
+   IEN1 = storedIEN1;
+   IEN2 = storedIEN2; 
+   
+   // restore DMA descriptor
+   DMA0CFGH = storedDescHigh;
+   DMA0CFGL = storedDescLow;
+   
    // Switch back to high speed
-   switchToHSXOSC();   
+   boardClockInit();   
 }
 
 
@@ -193,6 +186,8 @@ void sleepMode3(void)
 {  
    unsigned char storedDescHigh, storedDescLow;
    
+   // set Sleep Timer to the lowest resolution (1 second)      
+   WORCTRL |= 0x03; 
    // must be using RC OSC before going to PM3
    switchToRCOSC();
    
@@ -217,8 +212,7 @@ void sleepMode3(void)
    // make sure interrupts aren't completely disabled
    IEN0 |= (1<<7);
             
-   // Flash cache must be disabled.
-   MEMCTR |= 0x02;
+   MEMCTR |= 0x02;  // Flash cache must be disabled.
    SLEEP = 0x07; // PM3, disable USB, power down other oscillators
     
    __asm nop __endasm; 
@@ -232,8 +226,12 @@ void sleepMode3(void)
       __asm orl 0x87,#0x01 __endasm; // PCON |= 0x01;
       __asm nop __endasm;      
    }
+   
+   // restore DMA descriptor
+   DMA0CFGH = storedDescHigh;
+   DMA0CFGL = storedDescLow;
 
    // Switch back to high speed
-   switchToHSXOSC();   
+   boardClockInit();    
 }
 

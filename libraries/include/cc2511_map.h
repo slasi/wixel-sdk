@@ -45,16 +45,22 @@
  *    the *_VECTOR macros defined in this file (e.g. "P1INT").
  *
  * \param bank
- *    The register back to use.  Must be a number from 0 to 3, inclusive.
+ *    The register bank to use.  Must be a number from 0 to 3, inclusive.
+ *    If you choose a non-zero bank, then the compiler will assume that the
+ *    ISR can modify the registers in that bank, and not bother to restore
+ *    them to their original value.
+ *    Therefore, we recommend choosing bank 0 unless you want to save some
+ *    CPU time and you can guarantee that it is OK for the interrupt to
+ *    modify those registers.
  *
  * Example ISR declaration (in a .h file):
 \code
-ISR(UTX1, 1);
+ISR(UTX1, 0);
 \endcode
  *
  * Example ISR definition (in a .c file):
 \code
-ISR(UTX1, 1)
+ISR(UTX1, 0)
 {
     // code for handling event and clearing interrupt flag
 }
@@ -240,6 +246,9 @@ SFR16(0xD5, 0xD4, DMA0CFG)
 SFR16(0xD3, 0xD2, DMA1CFG)
 SFR16(0xAD, 0xAC, FADDR)
 SFR16(0xBB, 0xBA, ADC)
+SFR16(0xDB, 0xDA, T1CC0)
+SFR16(0xDD, 0xDC, T1CC1)
+SFR16(0xDF, 0xDE, T1CC2)
 
 // XDATA Radio Registers (SWRS055F Table 32)
 

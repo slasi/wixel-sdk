@@ -18,7 +18,6 @@
 #include <cc2511_map.h>
 #include <cc2511_types.h>
 #include <board.h>
-#include <sleep.h>
 #include <time.h>
 #include <dma.h>
 
@@ -33,7 +32,6 @@ void systemInit()
     boardClockInit();
     timeInit();
     dmaInit();
-    sleepInit();
 }
 
 void boardService()

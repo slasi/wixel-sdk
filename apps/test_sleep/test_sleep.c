@@ -23,6 +23,7 @@ void flash(unsigned int times)
 void main()
 {
     systemInit();
+    sleepInit();
     
     while(1)
     {

@@ -59,6 +59,9 @@ void boardClockInit()
     //    This is required for using the Forward Error Correction radio feature (which we don't use anymore).
     CLKCON = 0x80;
 
+    // Wait until system clock source has actually changed (CLKCON.OSC = 0)
+    while ( CLKCON & 0x40 );
+
     // Power down the HS RCOSC (the one that is not currently selected by
     // CLKCON.OSC).
     SLEEP |= 0x04;

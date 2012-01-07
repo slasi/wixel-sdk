@@ -235,8 +235,9 @@ void radioMacResume()
         WORCTRL = 0;
 		WOREVT1 = savedWOREVT1;
         WOREVT0 = 0;
-        IEN2 |= 0x01;    // Enable RF general interrupt
 	}
+
+    IEN2 |= 0x01;    // Enable RF general interrupt
 
     switch(radioMacState)
     {
